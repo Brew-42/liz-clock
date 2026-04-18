@@ -299,9 +299,8 @@ if __name__ == "__main__":
     
     # Optional: You can keep show_first_boot_quote() here if you want 
     # to see a specific image every time the Pi restarts.
-      show_first_boot_quote() 
-    
-    try:
+   show_first_boot_quote()    
+try:
         main_loop() # This calls the Pi/Hardware version
     except KeyboardInterrupt:
         print("Clock stopped by user.")
