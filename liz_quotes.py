@@ -296,9 +296,8 @@ def debug_loop():
 if __name__ == "__main__":
     print("Initializing Liz-Clock...")
     
-    show_first_boot_quote()
-    
-    try:
+show_first_boot_quote()    
+try:
         main_loop()
     except KeyboardInterrupt:
         print("Clock stopped by user.")
