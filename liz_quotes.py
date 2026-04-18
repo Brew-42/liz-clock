@@ -212,7 +212,7 @@ def show_first_boot_quote():
     # Add these lines to push it to the hardware:
     epd = epd7in5_V2.EPD()
     epd.init()
-    epd.display(epd.getbuffer(img))
+    epd.display(epd.getbuffer(image))
     epd.sleep()
 
 # ============================================================
@@ -241,7 +241,7 @@ def debug_loop():
 
         time.sleep(1)
 
-# ==================================def main_loop():
+def main_loop():
     last_minute = -1
     print("Literary Clock is now running on the Pi...")
 
@@ -294,10 +294,9 @@ def debug_loop():
 # ============================================================
 
 if __name__ == "__main__":
-    print("Initializing Liz-Clock...")
-    
-show_first_boot_quote()    
-try:
-       main_loop()
-   except KeyboardInterrupt:
-        print("Clock stopped by user.")
+    print("Initializing...")
+#    show_first_boot_quote()
+    try:
+        main_loop()
+    except KeyboardInterrupt:
+        print("Stopped.")
