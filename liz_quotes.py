@@ -289,24 +289,16 @@ def debug_loop():
         # Wait 1 second before checking if the minute has changed again
         time.sleep(1)
 
-#=============================================================
+# ============================================================
 # ENTRY POINT
 # ============================================================
 
 if __name__ == "__main__":
-    # This runs once when the Pi starts up
     print("Initializing Liz-Clock...")
     
-    # Optional: You can keep show_first_boot_quote() here if you want 
-    # to see a specific image every time the Pi restarts.
-   show_first_boot_quote()    
-try:
-        main_loop() # This calls the Pi/Hardware version
+    show_first_boot_quote()
+    
+    try:
+        main_loop()
     except KeyboardInterrupt:
         print("Clock stopped by user.")
-        # This helps clear the pins if you stop the script
-        from waveshare_epd import epd7in5_V2
-        epd = epd7in5_V2.EPD()
-        epd.init()
-        epd.sleep()
-
