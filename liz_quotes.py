@@ -298,6 +298,6 @@ if __name__ == "__main__":
     
 show_first_boot_quote()    
 try:
-        main_loop()
-    except KeyboardInterrupt:
+       main_loop()
+   except KeyboardInterrupt:
         print("Clock stopped by user.")
