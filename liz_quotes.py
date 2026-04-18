@@ -199,24 +199,26 @@ def get_quote_for_time(now):
     return author, source, text, is_general
 
 # ============================================================
-# FIRST BOOT QUOTE
+# FIRST BOOT QUOTE (RUNS EVERY REBOOT)
 # ============================================================
 
 def show_first_boot_quote():
     now = datetime.now()
+
     author = "Mary Shelley"
     source = ""
-    text = "Hello, World.  ~ Brian Kernighan ~ 1978 \n\n  The beginning is always today."
+    text = "Hello, World.  ~ Brian Kernighan ~ 1978\n\nThe beginning is always today."
     is_general = True
 
-    # Add these lines to push it to the hardware:
+    image = render_quote(now, author, source, text, is_general)
+
     epd = epd7in5_V2.EPD()
     epd.init()
     epd.display(epd.getbuffer(image))
     epd.sleep()
 
 # ============================================================
-# MAIN LOOP
+# WINDOWS DEBUG LOOP (PRESERVED)
 # ============================================================
 
 def debug_loop():
@@ -236,57 +238,49 @@ def debug_loop():
             image.save(filename)
             print(f"[{now.strftime('%I:%M %p')}] Saved: {filename}")
 
-#            os.startfile(filename)
             last_minute = now.minute
 
         time.sleep(1)
+
+# ============================================================
+# MAIN LOOP (SOFT REFRESH + 3:00 AM DEEP CLEAN)
+# ============================================================
 
 def main_loop():
     last_minute = -1
     print("Literary Clock is now running on the Pi...")
 
-    # 1. Initialize the screen hardware object
-    # This tells the script which driver to use (the 7.5 inch V2)
     epd = epd7in5_V2.EPD()
 
     while True:
         now = datetime.now()
 
-        # Only update when the minute actually changes
         if now.minute != last_minute:
             print(f"[{now.strftime('%I:%M %p')}] New minute detected. Updating...")
-            
-            # 2. Get the quote and render the image (your existing functions)
+
             author, source, text, is_general = get_quote_for_time(now)
             image = render_quote(now, author, source, text, is_general)
 
             try:
-                # 3. Wake up the screen
                 epd.init()
-                
-                # 4. Hourly "Deep Clean" 
-                # Doing a full Clear once an hour prevents "ghosting" (shadows of old quotes)
-                if now.minute == 0:
-                    print("Performing hourly screen refresh...")
+
+                # Daily deep clean at 3:00 AM
+                if now.hour == 3 and now.minute == 0:
+                    print("Performing daily 3:00 AM full refresh...")
                     epd.Clear()
-                
-                # 5. Push the image to the screen
-                # 'getbuffer' converts your 'image' into data the hardware understands
+
+                # Soft refresh for all other minutes
                 epd.display(epd.getbuffer(image))
-                
-                # 6. Put the screen to sleep
-                # This is CRITICAL. It turns off the power to the screen panel 
-                # to prevent long-term damage while it's just sitting there.
+
                 epd.sleep()
-                
+
                 print(f"[{now.strftime('%I:%M %p')}] Screen update complete.")
-                
+
             except Exception as e:
                 print(f"Hardware Error on the Pi: {e}")
 
             last_minute = now.minute
 
-        # Wait 1 second before checking if the minute has changed again
         time.sleep(1)
 
 # ============================================================
@@ -295,7 +289,15 @@ def main_loop():
 
 if __name__ == "__main__":
     print("Initializing...")
-#    show_first_boot_quote()
+
+    # Show first-boot quote on every reboot
+    show_first_boot_quote()
+
+    try:
+        main_loop()
+    except KeyboardInterrupt:
+        print("Stopped.")
+
     try:
         main_loop()
     except KeyboardInterrupt:
