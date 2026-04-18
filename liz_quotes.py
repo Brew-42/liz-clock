@@ -1,4 +1,3 @@
-
 import random
 import sqlite3
 import os
@@ -210,15 +209,17 @@ def show_first_boot_quote():
     text = "Hello, World.  ~ Brian Kernighan ~ 1978 \n\n  The beginning is always today."
     is_general = True
 
-    img = render_quote(now, author, source, text, is_general)
-    img.save("first_boot.png")
-    # os.startfile("first_boot.png")
+    # Add these lines to push it to the hardware:
+    epd = epd7in5_V2.EPD()
+    epd.init()
+    epd.display(epd.getbuffer(img))
+    epd.sleep()
 
 # ============================================================
 # MAIN LOOP
 # ============================================================
 
-def main_loop():
+def debug_loop():
     last_minute = -1
     print("Windows DEBUG Mode: Creating unique file for every minute...")
 
@@ -293,9 +294,20 @@ def main_loop():
 # ============================================================
 
 if __name__ == "__main__":
-    show_first_boot_quote()
-    main_loop()
+    # This runs once when the Pi starts up
+    print("Initializing Liz-Clock...")
+    
+    # Optional: You can keep show_first_boot_quote() here if you want 
+    # to see a specific image every time the Pi restarts.
+      show_first_boot_quote() 
+    
+    try:
+        main_loop() # This calls the Pi/Hardware version
+    except KeyboardInterrupt:
+        print("Clock stopped by user.")
+        # This helps clear the pins if you stop the script
+        from waveshare_epd import epd7in5_V2
+        epd = epd7in5_V2.EPD()
+        epd.init()
+        epd.sleep()
 
-
-nano quotes_to_clock.py
-nano quotes_to_clock.py
