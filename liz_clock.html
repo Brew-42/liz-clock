@@ -2,241 +2,169 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Literary Clock</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liz Clock</title>
 
 <style>
-    @font-face {
-        font-family: 'Alice';
-        src: url('Alice-Regular.ttf') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-    }
-
-    :root {
-        --bg: #111;
-        --fg: #f5f5f5;
-        --accent: #bbb;
-        --quote-max: 36;
-        --quote-min: 18;
-        --attr-size: 1.1rem;
-        --time-size: 1.0rem;
-        --max-width: 80vw;
-    }
-
     body {
         margin: 0;
-        background: var(--bg);
-        color: var(--fg);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        padding: 40px 50px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .quote-block {
-        max-width: var(--max-width);
-        text-align: center;
-        line-height: 1.4;
-    }
-
-    .quote-text {
+        padding: 0;
+        background: #F5EEDC; /* soft beige */
         font-family: 'Alice', serif;
-        letter-spacing: 0.02em;
+        color: #000;
+        overflow: hidden;
     }
 
-    .quote-text::before { content: "“"; opacity: 0.6; }
-    .quote-text::after { content: "”"; opacity: 0.6; }
+    @font-face {
+        font-family: 'Alice';
+        src: url('Alice-Regular.ttf');
+    }
 
-    .meta {
+    /* TIME (only for general quotes) */
+    #timeDisplay {
         position: absolute;
-        right: 40px;
-        bottom: 30px;
+        top: 40px;
+        left: 40px;
+        font-size: 72px;
+        font-family: 'Alice';
+        display: none;
+        opacity: 0;
+        transition: opacity 1s ease;
+    }
+
+    /* QUOTE BLOCK */
+    #quoteText {
+        position: absolute;
+        width: 900px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -55%); /* upward shift */
+        font-size: 64px;
+        line-height: 1.25;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 1s ease;
+    }
+
+    /* ATTRIBUTION */
+    #attribution {
+        position: absolute;
+        right: 90px;
+        bottom: 50px;
+        width: 600px;
+        font-size: 30px;
         text-align: right;
-        color: var(--accent);
+        opacity: 0.75;
+        font-family: 'Alice';
+        opacity: 0;
+        transition: opacity 1s ease;
     }
-
-    .attribution {
-    font-family: 'Alice';
-    font-size: 30px;
-    opacity: 0.75;
-    position: absolute;
-    right: 90px;
-    bottom: 50px;
-}
-
 </style>
-
-<script>
-let quotes = [];
-let lastMinute = -1;
-
-// Load quotes.json
-async function loadQuotes() {
-    const response = await fetch("quotes.json");
-    quotes = await response.json();
-}
-
-// Utility: wrap text to a max width using canvas measurement
-function wrapText(ctx, text, maxWidth) {
-    const words = text.split(" ");
-    const lines = [];
-    let current = [];
-
-    for (let w of words) {
-        const test = [...current, w].join(" ");
-        if (ctx.measureText(test).width <= maxWidth) {
-            current.push(w);
-        } else {
-            if (current.length) lines.push(current.join(" "));
-            current = [w];
-        }
-    }
-    if (current.length) lines.push(current.join(" "));
-    return lines;
-}
-
-// Select quote using Pi logic
-function selectQuote(now) {
-    const minuteOfDay = now.getHours() * 60 + now.getMinutes();
-
-    // 20% general quote
-    let isGeneral = Math.random() < 0.20;
-
-    let candidates = [];
-
-    if (isGeneral) {
-        candidates = quotes.filter(q =>
-            q.minute_of_day === null ||
-            q.minute_of_day === -1 ||
-            (q.tag && q.tag.toLowerCase().includes("general"))
-        );
-        if (candidates.length === 0) isGeneral = false;
-    }
-
-    if (!isGeneral) {
-        candidates = quotes.filter(q => q.minute_of_day === minuteOfDay);
-    }
-
-    if (candidates.length === 0) {
-        candidates = quotes.filter(q =>
-            q.minute_of_day === null ||
-            q.minute_of_day === -1 ||
-            (q.tag && q.tag.toLowerCase().includes("general"))
-        );
-        isGeneral = true;
-    }
-
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-    return { ...chosen, isGeneral };
-}
-
-// Render quote with shrink-to-fit
-function renderQuote(q, now) {
-    const container = document.getElementById("quote");
-    const attr = document.getElementById("attr");
-    const time = document.getElementById("time");
-
-    // Attribution formatting
-    let attrText = "";
-    if (q.author && q.source && q.source.trim() && q.source !== q.author) {
-        attrText = `~ ${q.author}, ${q.source}`;
-    } else if (q.author) {
-        attrText = `~ ${q.author}`;
-    }
-
-    attr.textContent = attrText;
-
-    // Time display only for general quotes
-    if (q.isGeneral) {
-        time.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else {
-        time.textContent = "";
-    }
-
-    // Shrink-to-fit using canvas measurement
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    let size = 36;
-    let lines = [];
-
-    while (size >= 18) {
-        ctx.font = `${size}px Alice`;
-        lines = wrapText(ctx, q.text, window.innerWidth * 0.75);
-        const totalHeight = lines.length * (size * 1.3);
-
-        if (totalHeight < window.innerHeight * 0.55) break;
-        size -= 2;
-    }
-
-    container.style.fontSize = size + "px";
-    container.innerHTML = lines.join("<br>");
-}
-
-// First-boot quote (every reboot)
-function showFirstBootQuote() {
-    const now = new Date();
-
-    const q = {
-        text: "Hello, World.  ~ Brian Kernighan ~ 1978\n\nThe beginning is always today.",
-        author: "Mary Shelley",
-        source: "",
-        isGeneral: true
-    };
-
-    renderQuote(q, now);
-}
-
-// Main update loop
-function updateClock() {
-    const now = new Date();
-    if (now.getMinutes() !== lastMinute) {
-        const q = selectQuote(now);
-        renderQuote(q, now);
-        lastMinute = now.getMinutes();
-    }
-    setTimeout(updateClock, 1000);
-}
-
-window.onload = async () => {
-    await loadQuotes();
-
-    // Show first-boot quote until next minute
-    showFirstBootQuote();
-
-    const now = new Date();
-    const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-
-    setTimeout(() => {
-        lastMinute = -1;
-        updateClock();
-    }, msUntilNextMinute + 50);
-};
-</script>
 
 </head>
 <body>
-<div class="container">
-    <div class="quote-block">
-        <div class="quote-text" id="quote"></div>
-    </div>
 
-    <div class="meta">
-        <div class="attribution" id="attr"></div>
-        <div class="time-display" id="time"></div>
-    </div>
-</div>
+<div id="timeDisplay"></div>
+<div id="quoteText"></div>
+<div id="attribution"></div>
+
+<script>
+async function loadQuotes() {
+    const response = await fetch("quotes.json");
+    return await response.json();
+}
+
+function getCurrentMinuteOfDay() {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+}
+
+function formatTime() {
+    const now = new Date();
+    let hours = now.getHours();
+    let minutes = now.getMinutes().toString().padStart(2, "0");
+
+    let displayHour = hours % 12;
+    if (displayHour === 0) displayHour = 12;
+
+    return `${displayHour}:${minutes}`;
+}
+
+/* 20% chance to override with a general quote */
+function shouldUseGeneralQuote() {
+    return Math.random() < 0.20;
+}
+
+function pickQuote(quotes) {
+    const minute = getCurrentMinuteOfDay();
+
+    const timeQuotes = quotes.filter(q => q.tag === "time" && q.minute_of_day === minute);
+    const generalQuotes = quotes.filter(q => q.tag === "general");
+
+    if (timeQuotes.length > 0 && !shouldUseGeneralQuote()) {
+        return timeQuotes[Math.floor(Math.random() * timeQuotes.length)];
+    }
+
+    return generalQuotes[Math.floor(Math.random() * generalQuotes.length)];
+}
+
+function buildAttribution(q) {
+    const author = q.author ? q.author.trim() : "";
+    const source = q.source ? q.source.trim() : "";
+
+    if (author && source) return `~ ${author} ~ ${source}`;
+    if (author) return `~ ${author}`;
+    if (source) return `~ ${source}`;
+    return "";
+}
+
+function fadeIn(el) {
+    el.style.opacity = 1;
+}
+
+function fadeOut(el) {
+    el.style.opacity = 0;
+}
+
+function renderQuote(q) {
+    const timeEl = document.getElementById("timeDisplay");
+    const quoteEl = document.getElementById("quoteText");
+    const attrEl = document.getElementById("attribution");
+
+    fadeOut(timeEl);
+    fadeOut(quoteEl);
+    fadeOut(attrEl);
+
+    setTimeout(() => {
+        quoteEl.textContent = "“" + q.text + "”";
+
+        const attribution = buildAttribution(q);
+        attrEl.textContent = attribution;
+
+        if (q.tag === "general") {
+            timeEl.style.display = "block";
+            timeEl.textContent = formatTime();
+        } else {
+            timeEl.style.display = "none";
+        }
+
+        fadeIn(quoteEl);
+        fadeIn(attrEl);
+        if (q.tag === "general") fadeIn(timeEl);
+
+    }, 500);
+}
+
+async function startClock() {
+    const quotes = await loadQuotes();
+    renderQuote(pickQuote(quotes));
+
+    setInterval(() => {
+        renderQuote(pickQuote(quotes));
+    }, 60000);
+}
+
+startClock();
+</script>
+
 </body>
 </html>
